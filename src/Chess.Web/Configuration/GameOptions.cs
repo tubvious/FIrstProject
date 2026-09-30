@@ -5,6 +5,13 @@ public sealed class GameOptions
 {
     public const string SectionName = "Chess";
 
+    /// <summary>
+    /// Public address used in shareable game links, e.g. "https://chess.example.com" or a dev tunnel URL.
+    /// When empty, links use the address the page was opened with (or this machine's network address
+    /// when the host is browsing via localhost).
+    /// </summary>
+    public string? PublicBaseUrl { get; set; }
+
     /// <summary>How long a disconnected player has to come back before the opponent may claim the game.</summary>
     public TimeSpan ReconnectGracePeriod { get; set; } = TimeSpan.FromSeconds(60);
 
@@ -22,6 +29,7 @@ public sealed class GameOptions
     public int GameCreationPerMinuteLimit { get; set; } = 20;
 
     internal bool IsValid() =>
+        (string.IsNullOrWhiteSpace(PublicBaseUrl) || Uri.TryCreate(PublicBaseUrl, UriKind.Absolute, out _)) &&
         ReconnectGracePeriod > TimeSpan.Zero &&
         ClockCheckInterval > TimeSpan.Zero &&
         IdleGameEvictionAfter > TimeSpan.Zero &&

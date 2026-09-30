@@ -2,15 +2,22 @@ using Chess.Web.Configuration;
 using Chess.Web.Endpoints;
 using Chess.Web.Hubs;
 using Chess.Web.Infrastructure;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorPages();
 builder.Services.AddChessServices(builder.Configuration, builder.Environment);
 
+// Behind a tunnel or reverse proxy on this machine, use the address the browser actually used.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost);
+
 var app = builder.Build();
 
 await app.InitializeDatabaseAsync();
+
+app.UseForwardedHeaders();
 
 if (!app.Environment.IsDevelopment())
 {

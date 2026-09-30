@@ -434,10 +434,11 @@ class GamePage {
 
   #renderMeta() {
     const state = this.#state;
-    const link = `${window.location.origin}/game/${this.#code}`;
+    const link = this.#shareLink();
     byId('meta-code').textContent = this.#code;
     document.querySelectorAll('#overlay-invite [data-role="code"]').forEach((el) => { el.textContent = this.#code; });
     document.querySelectorAll('#overlay-invite [data-role="link"]').forEach((el) => { el.value = link; });
+    document.querySelector('#overlay-invite .invite__warning')?.toggleAttribute('hidden', !/\/\/(localhost|127\.|\[::1\])/.test(link));
 
     if (!state) return;
     const clock = state.clock;
@@ -530,6 +531,18 @@ class GamePage {
     overlay.querySelector('[data-role="message"]').textContent = message;
   }
 
+  /**
+   * The link a friend can open. The server works out an address reachable from other computers;
+   * if it could only offer a localhost address but this page is being viewed through a real address
+   * (e.g. a tunnel or proxy), the page's own address is the better choice.
+   */
+  #shareLink() {
+    const { shareBase, shareLocalOnly } = this.#root.dataset;
+    const viewedLocally = /^(localhost|127\.|\[::1\])/.test(window.location.hostname);
+    const base = shareLocalOnly === 'true' && !viewedLocally ? window.location.origin : shareBase || window.location.origin;
+    return `${base}/game/${this.#code}`;
+  }
+
   #updateTitle() {
     const state = this.#state;
     const myTurn = state?.status === 'inProgress' && state.turn === this.#myColor;
@@ -555,7 +568,7 @@ class GamePage {
   #bindControls() {
     document.querySelectorAll('[data-action="copy-link"]').forEach((el) =>
       el.addEventListener('click', async () => {
-        const copied = await copyText(`${window.location.origin}/game/${this.#code}`);
+        const copied = await copyText(this.#shareLink());
         toast(copied ? 'Game link copied. Send it to a friend!' : 'Could not copy the link', { type: copied ? 'success' : 'error' });
       }));
 

@@ -581,6 +581,26 @@
   color: var(--text-muted);
 }
 
+.invite__warning {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--warning-soft);
+  color: var(--text);
+  font-size: 12.5px;
+  text-align: left;
+}
+
+.invite__warning svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  color: var(--warning);
+}
+
 .pulse-dots {
   display: inline-flex;
   gap: 6px;

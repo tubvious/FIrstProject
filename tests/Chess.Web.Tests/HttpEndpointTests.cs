@@ -82,6 +82,33 @@ public sealed class HttpEndpointTests : IClassFixture<ChessAppFactory>
     }
 
     [Fact]
+    public async Task GamePage_WarnsWhenTheShareLinkOnlyWorksOnThisComputer()
+    {
+        var created = await TestPlayer.CreateGameAsync(_factory);
+        using var client = _factory.CreateClient();
+
+        var html = await client.GetStringAsync($"/game/{created.Code}");
+
+        Assert.Contains("data-share-local-only=\"true\"", html);
+        Assert.Contains("This link only works on this computer", html);
+    }
+
+    [Fact]
+    public async Task GamePage_UsesTheConfiguredPublicAddressForShareLinks()
+    {
+        using var configured = _factory.WithWebHostBuilder(builder =>
+            builder.UseSetting("Chess:PublicBaseUrl", "https://chess.example.com/"));
+        using var client = configured.CreateClient();
+        var created = await TestPlayer.CreateGameAsync(_factory);
+
+        var html = await client.GetStringAsync($"/game/{created.Code}");
+
+        Assert.Contains($"value=\"https://chess.example.com/game/{created.Code}\"", html);
+        Assert.Contains("data-share-local-only=\"false\"", html);
+        Assert.DoesNotContain("This link only works on this computer", html);
+    }
+
+    [Fact]
     public async Task Responses_CarrySecurityHeaders()
     {
         using var client = _factory.CreateClient();

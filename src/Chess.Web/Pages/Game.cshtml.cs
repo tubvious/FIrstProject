@@ -1,5 +1,6 @@
 using Chess.Web.Contracts;
 using Chess.Web.Domain;
+using Chess.Web.Infrastructure;
 using Chess.Web.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -7,11 +8,16 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 namespace Chess.Web.Pages;
 
 /// <summary>The game screen. Only checks that the game exists; live state arrives over SignalR.</summary>
-public sealed class GameModel(IGameService games) : PageModel
+public sealed class GameModel(IGameService games, ShareLinkProvider shareLinks) : PageModel
 {
     public string Code { get; private set; } = string.Empty;
 
     public GameSummaryDto? Summary { get; private set; }
+
+    /// <summary>Where a friend on another computer can reach this game.</summary>
+    public ShareBase Share { get; private set; } = new(string.Empty, IsLocalOnly: true);
+
+    public string ShareUrl => $"{Share.BaseUrl}/game/{Code}";
 
     public async Task<IActionResult> OnGetAsync(string code, CancellationToken cancellationToken)
     {
@@ -30,6 +36,7 @@ public sealed class GameModel(IGameService games) : PageModel
 
         Code = normalized;
         Summary = summary;
+        Share = shareLinks.GetShareBase(Request);
         return Page();
     }
 }

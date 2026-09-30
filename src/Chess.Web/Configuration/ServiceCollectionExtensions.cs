@@ -4,6 +4,7 @@ using System.Threading.RateLimiting;
 using Chess.Web.Data;
 using Chess.Web.Endpoints;
 using Chess.Web.Hubs;
+using Chess.Web.Infrastructure;
 using Chess.Web.Services;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +28,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IGameRepository, GameRepository>();
         services.AddSingleton<GameRegistry>();
         services.AddSingleton<PlayerNames>();
+        services.AddSingleton<ShareLinkProvider>();
         services.AddSingleton<IGameNotifier, SignalRGameNotifier>();
         services.AddSingleton<IGameService, GameService>();
         services.AddHostedService<ClockWatchdogService>();

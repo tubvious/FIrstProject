@@ -18,7 +18,8 @@
     return;
 }
 
-<div class="game-layout" id="game" data-game-code="@Model.Code">
+<div class="game-layout" id="game" data-game-code="@Model.Code"
+     data-share-base="@Model.Share.BaseUrl" data-share-local-only="@(Model.Share.IsLocalOnly ? "true" : "false")">
     <section class="board-column" aria-label="Board">
         <partial name="_PlayerBar" model="@("bar-top")" />
 
@@ -39,9 +40,17 @@
                     </div>
                     <div class="invite__code kbd-code" data-role="code">@Model.Code</div>
                     <div class="input-group">
-                        <input class="input" data-role="link" readonly aria-label="Game link" />
+                        <input class="input" data-role="link" readonly aria-label="Game link" value="@Model.ShareUrl" />
                         <button class="btn btn--primary" type="button" data-action="copy-link"><icon name="copy" />Copy</button>
                     </div>
+                    @if (Model.Share.IsLocalOnly)
+                    {
+                        <p class="invite__warning" role="note">
+                            <icon name="alert" />
+                            <span>This link only works on this computer. To play with a friend on another computer,
+                                start the app with the <strong>network</strong> launch profile or a dev tunnel (see README).</span>
+                        </p>
+                    }
                 </div>
 
                 <div class="invite" id="overlay-error" hidden>

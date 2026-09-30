@@ -33,13 +33,42 @@ includes the .NET 10 SDK. (Using Visual Studio 2022 / .NET 8? See [below](#using
 
 1. Open `Chess.sln`.
 2. Make sure **Chess.Web** is the startup project (right-click → *Set as Startup Project*).
-3. Press **F5** (or Ctrl+F5). The `https` launch profile opens `https://localhost:7069`.
-   Accept the prompt to trust the ASP.NET Core development certificate the first time.
+3. Choose a launch profile in the toolbar's run dropdown and press **F5** (or Ctrl+F5):
+   - **network** (default) — for playing with a friend on another computer on your network.
+     Opens `http://localhost:5100` for you and also listens on port `5101` for other computers.
+   - **https** / **http** — this computer only.
 
 The SQLite database (`src/Chess.Web/App_Data/chess.db`) is created and migrated automatically on
 startup, so there is nothing else to set up.
 
-### Playing against yourself
+## Playing on two different computers
+
+The server runs on one computer (the host); both players just use a browser. Create a game on the
+host and press **Copy Game Link**. The app puts an address in that link that the other computer
+can reach, never `localhost`. If the server can only be reached from the host computer, the invite
+card warns you.
+
+**Same Wi-Fi / local network**
+
+1. On the host, run with the **network** launch profile.
+2. The first time, Windows asks whether to allow the app through the firewall — allow it on
+   **private networks**.
+3. Create a game and send the copied link (it looks like `http://192.168.1.23:5101/game/K7QD2MXA`) to
+   your friend. They open it and the game starts.
+
+**Over the internet (friend somewhere else)** — use a Visual Studio *dev tunnel*:
+
+1. In the run dropdown choose **Dev Tunnels → Create a Tunnel…**, sign in, pick
+   **Tunnel type: Temporary** (or Persistent) and **Access: Public**, and make it the active tunnel.
+2. Run with the **https** profile. The browser opens a `https://….devtunnels.ms` address.
+3. Create a game there; the copied link uses the tunnel address, so it works from anywhere.
+   (Your friend may see a one-time dev tunnels confirmation page.)
+
+**Hosting it permanently** — publish `Chess.Web` to any host that supports ASP.NET Core and
+WebSockets (e.g. Azure App Service with *Web sockets* turned on). Links automatically use the
+address people browse to; set `Chess:PublicBaseUrl` if they should use a different one.
+
+### Testing on one computer
 
 Open the game link in a **second tab or window** — each tab is treated as a separate player, so you
 can play both sides from one browser. (A private/incognito window works too.)
@@ -48,12 +77,12 @@ Opening the link in a third tab makes you a spectator.
 ### From the command line
 
 ```bash
-dotnet run --project src/Chess.Web     # https://localhost:7069 and http://localhost:5100
+dotnet run --project src/Chess.Web     # "network" profile: http://localhost:5100 (+ port 5101 for other computers)
 dotnet test                            # engine + web tests
 ```
 
 If the browser doesn't trust the local HTTPS certificate, run `dotnet dev-certs https --trust` once,
-or use `dotnet run --project src/Chess.Web --launch-profile http`.
+or use `--launch-profile http` / `--launch-profile network`.
 
 ## Configuration
 
@@ -63,6 +92,7 @@ Any value can be overridden with environment variables (use `__` for nesting, e.
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
+| `Chess:PublicBaseUrl` | *(empty)* | Address used in shareable links, e.g. `https://chess.example.com`. When empty, the app works it out (see above). |
 | `ConnectionStrings:Chess` | `Data Source=App_Data/chess.db` | SQLite database. Relative paths are resolved against the app folder. |
 | `Chess:ReconnectGracePeriod` | `00:01:00` | How long a disconnected player has before the opponent may claim the game. |
 | `Chess:ClockCheckInterval` | `00:00:00.200` | How often running clocks are checked for flag falls. |
