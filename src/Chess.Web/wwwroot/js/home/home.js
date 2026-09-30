@@ -33,10 +33,21 @@ function initCreateDialog() {
   const error = document.getElementById('create-error');
   const submit = document.getElementById('create-submit');
 
-  document.getElementById('create-open').addEventListener('click', () => {
+  // One dialog serves both "Create Game" (a friend) and "Play vs Computer".
+  const open = (opponent) => {
+    form.querySelector('#create-opponent').value = opponent;
+    form.querySelector('#bot-levels').hidden = opponent !== 'computer';
+    for (const id of ['create-title', 'create-subtitle']) {
+      const el = document.getElementById(id);
+      el.textContent = el.dataset[opponent];
+    }
+    submit.textContent = opponent === 'computer' ? 'Start game' : 'Create game';
     error.textContent = '';
     dialog.showModal();
-  });
+  };
+
+  document.getElementById('create-open').addEventListener('click', () => open('friend'));
+  document.getElementById('bot-open').addEventListener('click', () => open('computer'));
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -44,6 +55,9 @@ function initCreateDialog() {
     const color = form.querySelector('input[name="color"]:checked')?.value ?? 'random';
     const minutes = timeControl?.dataset.minutes ? Number(timeControl.dataset.minutes) : null;
     const incrementSeconds = timeControl?.dataset.increment ? Number(timeControl.dataset.increment) : 0;
+    const opponent = form.querySelector('#create-opponent').value;
+    const botLevel = opponent === 'computer' ? Number(form.querySelector('input[name="botLevel"]:checked')?.value ?? 3) : null;
+    const submitLabel = submit.textContent;
 
     submit.disabled = true;
     submit.textContent = 'Creating…';
@@ -52,7 +66,7 @@ function initCreateDialog() {
       const response = await fetch('/api/games', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerName: getPlayerName(), minutes, incrementSeconds, color }),
+        body: JSON.stringify({ playerName: getPlayerName(), minutes, incrementSeconds, color, opponent, botLevel }),
       });
       if (response.status === 429) throw new Error('You are creating games too quickly. Please wait a moment.');
       if (!response.ok) throw new Error('Could not create the game. Please try again.');
@@ -63,7 +77,7 @@ function initCreateDialog() {
     } catch (err) {
       error.textContent = err instanceof TypeError ? 'Network error. Is the server running?' : err.message;
       submit.disabled = false;
-      submit.textContent = 'Create game';
+      submit.textContent = submitLabel;
     }
   });
 }

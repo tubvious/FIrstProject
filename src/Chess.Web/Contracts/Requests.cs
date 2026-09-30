@@ -3,8 +3,23 @@ using Chess.Web.Domain;
 
 namespace Chess.Web.Contracts;
 
-/// <summary>Body of POST /api/games. Omit <see cref="Minutes"/> for a game without a clock.</summary>
-public sealed record CreateGameRequest(string? PlayerName, int? Minutes, int? IncrementSeconds, ColorPreference Color);
+/// <summary>
+/// Body of POST /api/games. Omit <see cref="Minutes"/> for a game without a clock. To play the computer,
+/// set <see cref="Opponent"/> to <see cref="OpponentType.Computer"/> and choose a <see cref="BotLevel"/> (1-5).
+/// </summary>
+public sealed record CreateGameRequest(
+    string? PlayerName,
+    int? Minutes,
+    int? IncrementSeconds,
+    ColorPreference Color,
+    OpponentType Opponent = OpponentType.Friend,
+    int? BotLevel = null);
+
+public enum OpponentType
+{
+    Friend,
+    Computer,
+}
 
 public sealed record CreateGameResponse(string Code, string SeatToken, PieceColor Color, string Url);
 
@@ -56,6 +71,7 @@ public static class GameErrorMessages
         GameError.NoRematchRequest => "There is no rematch request to decline.",
         GameError.OpponentConnected => "Your opponent is still connected.",
         GameError.ReconnectGracePending => "Give your opponent a little longer to reconnect.",
+        GameError.NotAvailableAgainstComputer => "That isn't available when playing the computer.",
         _ => "Something went wrong.",
     };
 }

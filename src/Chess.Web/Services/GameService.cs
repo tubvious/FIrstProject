@@ -1,4 +1,5 @@
 using Chess.Engine;
+using Chess.Engine.Ai;
 using Chess.Web.Configuration;
 using Chess.Web.Contracts;
 using Chess.Web.Data;
@@ -35,7 +36,8 @@ public interface IGameService
     Task EnforceTimeControlsAsync(CancellationToken cancellationToken = default);
 }
 
-public sealed record CreateGameCommand(string? PlayerName, TimeControl? TimeControl, ColorPreference ColorPreference);
+/// <param name="BotLevel">Set to play the computer at this level (1-5); null to play a friend.</param>
+public sealed record CreateGameCommand(string? PlayerName, TimeControl? TimeControl, ColorPreference ColorPreference, int? BotLevel = null);
 
 /// <summary>
 /// Coordinates game commands: finds the session, serializes access to it, applies the domain rule,
@@ -64,8 +66,10 @@ public sealed class GameService(
             _ => Random.Shared.Next(2) == 0 ? PieceColor.White : PieceColor.Black,
         };
 
-        var session = GameSession.Create(
-            code, command.TimeControl, command.ColorPreference, color, playerNames.Sanitize(command.PlayerName), SeatToken.Hash(token), now);
+        var name = playerNames.Sanitize(command.PlayerName);
+        var session = command.BotLevel is { } botLevel
+            ? GameSession.CreateAgainstBot(code, command.TimeControl, command.ColorPreference, color, name, SeatToken.Hash(token), botLevel, now)
+            : GameSession.Create(code, command.TimeControl, command.ColorPreference, color, name, SeatToken.Hash(token), now);
 
         await repository.SaveAsync(session, now, cancellationToken);
         registry.Add(session);
@@ -241,6 +245,59 @@ public sealed class GameService(
         {
             await notifier.PublishNotificationAsync(session.Code, new GameNotificationDto(gameEvent.Type, gameEvent.Color));
         }
+
+        ScheduleBotMove(session, now);
+    }
+
+    /// <summary>
+    /// If it is the computer's turn, thinks on a background thread and then plays the move through the
+    /// normal command path. Must be called while holding the session lock.
+    /// </summary>
+    private void ScheduleBotMove(GameSession session, DateTimeOffset now)
+    {
+        // Wait until the human is actually looking at the board before the computer opens the game.
+        if (!session.IsBotToMove || session.BotMovePending || !session.HasConnections || session.BotColor is not { } botColor)
+        {
+            return;
+        }
+
+        session.BotMovePending = true;
+        var position = session.Game.CurrentPosition;
+        var ply = session.Game.Moves.Count;
+        var level = BotLevel.Get(session.Seat(botColor).BotLevel!.Value);
+
+        // Never let the computer lose on time: think for at most a small share of its remaining clock.
+        TimeSpan? budget = session.Clock is { } clock ? clock.GetRemaining(botColor, now) / 30 : null;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var started = timeProvider.GetTimestamp();
+                var move = ChessBot.ChooseMove(position, level, budget);
+                var pause = budget is { } cap && cap < _options.BotMinimumThinkTime ? cap : _options.BotMinimumThinkTime;
+                var remainingPause = pause - timeProvider.GetElapsedTime(started);
+                if (remainingPause > TimeSpan.Zero)
+                {
+                    await Task.Delay(remainingPause);
+                }
+
+                await ExecuteAsync(session.Code, (s, at) => move is { } chosen
+                    ? s.PlayBotMove(chosen, ply, at)
+                    : ClearPendingBotMove(s));
+            }
+            catch (Exception ex)
+            {
+                logger.BotMoveFailed(ex, session.Code);
+                await ExecuteAsync(session.Code, (s, _) => ClearPendingBotMove(s));
+            }
+        });
+    }
+
+    private static GameActionResult ClearPendingBotMove(GameSession session)
+    {
+        session.BotMovePending = false;
+        return GameActionResult.Unchanged;
     }
 
     private GameStateDto Snapshot(GameSession session, DateTimeOffset now) =>

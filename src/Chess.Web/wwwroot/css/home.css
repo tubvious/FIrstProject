@@ -66,6 +66,10 @@
   gap: 12px;
 }
 
+.hero__actions-wide {
+  grid-column: 1 / -1;
+}
+
 .name-card {
   display: flex;
   align-items: center;

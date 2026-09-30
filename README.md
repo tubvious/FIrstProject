@@ -13,6 +13,8 @@ Create a game, send the link to a friend, and play in the browser on desktop, ta
 - **Real-time multiplayer** over SignalR (WebSockets with automatic fallbacks):
   shareable game links/codes, automatic White/Black assignment, spectators,
   and automatic reconnection that resumes your seat.
+- **Play vs Computer** with five difficulty levels (Beginner, Easy, Medium, Hard, Expert). The
+  computer's moves are calculated on the server by a built-in chess engine.
 - **Chess clocks** (1+0 up to 15+10, or no clock), counted by the server; flag falls are detected even
   if nobody moves. Timeout against a lone king (or king + minor piece) is a draw.
 - **Game actions**: resign (with confirmation), abort before the first moves, draw offers
@@ -64,8 +66,10 @@ card warns you.
 3. Create a game there; the copied link uses the tunnel address, so it works from anywhere.
    (Your friend may see a one-time dev tunnels confirmation page.)
 
-**Hosting it permanently** — publish `Chess.Web` to any host that supports ASP.NET Core and
-WebSockets (e.g. Azure App Service with *Web sockets* turned on). Links automatically use the
+**Hosting it permanently** — publish `Chess.Web` to any host that runs an always-on ASP.NET Core
+server with WebSockets, e.g. Azure App Service (turn *Web sockets* on), Render, Railway or Fly.io.
+Serverless platforms such as **Vercel** are not suitable: they don't run .NET servers, can't keep
+WebSocket connections open, and have no persistent disk for the database. Links automatically use the
 address people browse to; set `Chess:PublicBaseUrl` if they should use a different one.
 
 ### Testing on one computer
@@ -98,6 +102,7 @@ Any value can be overridden with environment variables (use `__` for nesting, e.
 | `Chess:ClockCheckInterval` | `00:00:00.200` | How often running clocks are checked for flag falls. |
 | `Chess:IdleGameEvictionAfter` | `00:30:00` | Games nobody is connected to are unloaded from memory after this (they stay in the database). |
 | `Chess:EvictionSweepInterval` | `00:01:00` | How often idle games are looked for. |
+| `Chess:BotMinimumThinkTime` | `00:00:00.500` | The computer waits at least this long before moving, so replies don't feel instant. |
 | `Chess:MaxPlayerNameLength` | `24` | Longer display names are truncated. |
 | `Chess:GameCreationPerMinuteLimit` | `20` | Rate limit for creating games, per client IP. |
 
@@ -115,7 +120,10 @@ Chess.sln
 
 An immutable `Position` generates legal moves (pseudo-legal generation + "does this leave my king in
 check?" filtering) and applies moves. `ChessGame` holds the move history, SAN notation and decides
-when the game is over. `Fen` and `San` handle notation. Move generation is verified with the standard
+when the game is over. `Fen` and `San` handle notation. `Ai/ChessBot` is the computer opponent:
+an iterative-deepening alpha-beta search with quiescence search (it keeps looking at captures until
+the position is quiet) and a piece-square-table evaluation. Weaker levels search less deeply, add
+random error to their judgement and sometimes play a random move. Move generation is verified with the standard
 **perft** node counts (start position, "Kiwipete" and others), which exercise castling, en passant,
 promotions and pins exhaustively.
 
@@ -185,7 +193,8 @@ dotnet test
 ```
 
 - **Chess.Engine.Tests** — perft suites, castling/en passant/promotion edge cases, check, checkmate,
-  stalemate, draws, FEN and SAN.
+  stalemate, draws, FEN and SAN, and the computer opponent (finds mates, wins material, never plays
+  an illegal move, respects its time limit).
 - **Chess.Web.Tests** — `GameSession` rules (seats, turns, clocks, offers, rematch, abandonment) and
   integration tests that host the real app in memory and drive it with real SignalR clients:
   joining, broadcasting, rejected moves, spectators, reconnection, server-enforced timeouts (with a
@@ -212,6 +221,9 @@ These steps were verified: the solution builds without warnings and all tests pa
   instance (a scale-out setup would need a SignalR backplane and shared game ownership).
 - If the server restarts during a timed game, the time that passed while it was down is not charged.
 - Premoves and conditional moves are not supported.
+- The computer is a compact engine written for this project. Expert plays a solid club-level game
+  for casual players but is nowhere near engines like Stockfish. It also doesn't avoid
+  threefold repetition on purpose, and it can't be offered a draw.
 
 ## Credits
 

@@ -60,10 +60,17 @@ public sealed class TestPlayer : IAsyncDisposable
 
     /// <summary>Creates a game over HTTP (as the home page does) and returns the creator's code and seat token.</summary>
     public static async Task<CreateGameResponse> CreateGameAsync(
-        ChessAppFactory factory, ColorPreference color = ColorPreference.White, int? minutes = null, int increment = 0, string name = "Creator")
+        ChessAppFactory factory,
+        ColorPreference color = ColorPreference.White,
+        int? minutes = null,
+        int increment = 0,
+        string name = "Creator",
+        int? botLevel = null)
     {
         using var client = factory.CreateClient();
-        var response = await client.PostAsJsonAsync("/api/games", new CreateGameRequest(name, minutes, increment, color), Json);
+        var request = new CreateGameRequest(
+            name, minutes, increment, color, botLevel is null ? OpponentType.Friend : OpponentType.Computer, botLevel);
+        var response = await client.PostAsJsonAsync("/api/games", request, Json);
         response.EnsureSuccessStatusCode();
         return (await response.Content.ReadFromJsonAsync<CreateGameResponse>(Json))!;
     }

@@ -24,6 +24,7 @@
         <div class="hero__actions">
             <button class="btn btn--primary btn--lg" id="create-open" type="button"><icon name="plus" />Create Game</button>
             <button class="btn btn--lg" id="join-open" type="button"><icon name="enter" />Join Game</button>
+            <button class="btn btn--soft btn--lg hero__actions-wide" id="bot-open" type="button"><icon name="cpu" />Play vs Computer</button>
         </div>
 
         <button class="link-btn" id="howto-open" type="button"><icon name="help" />How to play</button>
@@ -44,11 +45,30 @@
     <form class="dialog__body" id="create-form" novalidate>
         <div class="dialog__header">
             <div>
-                <h2 class="dialog__title" id="create-title">New game</h2>
-                <p class="dialog__subtitle">Choose a time control and your colour.</p>
+                <h2 class="dialog__title" id="create-title" data-friend="New game" data-computer="Play the computer">New game</h2>
+                <p class="dialog__subtitle" id="create-subtitle" data-friend="Choose a time control and your colour."
+                   data-computer="Pick a difficulty, time control and colour.">Choose a time control and your colour.</p>
             </div>
             <button class="icon-btn" type="button" data-close aria-label="Close"><icon name="x" /></button>
         </div>
+
+        <input type="hidden" name="opponent" id="create-opponent" value="friend" />
+
+        <fieldset class="field" id="bot-levels" hidden>
+            <legend class="field__label">Difficulty</legend>
+            <div class="choice-grid choice-grid--levels">
+                @foreach (var level in Chess.Engine.Ai.BotLevel.All)
+                {
+                    <label class="choice">
+                        <input type="radio" name="botLevel" value="@level.Level" checked="@(level.Level == IndexModel.DefaultBotLevel)" />
+                        <span class="choice__body">
+                            <span class="choice__title">@level.Level</span>
+                            <span class="choice__hint">@level.Name</span>
+                        </span>
+                    </label>
+                }
+            </div>
+        </fieldset>
 
         <fieldset class="field">
             <legend class="field__label">Time control</legend>
@@ -124,6 +144,9 @@
             <li><div><strong>Share the link</strong><span>Send the game link or 8-letter code to your friend.</span></div></li>
             <li><div><strong>Play</strong><span>The game starts as soon as they join. Drag or click pieces to move.</span></div></li>
         </ol>
+        <p class="dialog__subtitle">
+            No one to play with? <strong>Play vs Computer</strong> offers five levels, from Beginner to Expert.
+        </p>
         <p class="dialog__subtitle">
             Standard chess rules apply, including castling, en passant and promotion. Games end by checkmate,
             stalemate, resignation, timeout, agreement, threefold repetition, the fifty-move rule or insufficient material.

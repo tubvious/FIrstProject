@@ -25,6 +25,9 @@ public sealed class GameOptions
 
     public int MaxPlayerNameLength { get; set; } = 24;
 
+    /// <summary>The computer waits at least this long before moving, so its replies don't feel instantaneous.</summary>
+    public TimeSpan BotMinimumThinkTime { get; set; } = TimeSpan.FromMilliseconds(500);
+
     /// <summary>Maximum number of games a single client IP may create per minute.</summary>
     public int GameCreationPerMinuteLimit { get; set; } = 20;
 
@@ -35,5 +38,6 @@ public sealed class GameOptions
         IdleGameEvictionAfter > TimeSpan.Zero &&
         EvictionSweepInterval > TimeSpan.Zero &&
         MaxPlayerNameLength is > 0 and <= 64 &&
+        BotMinimumThinkTime >= TimeSpan.Zero &&
         GameCreationPerMinuteLimit > 0;
 }

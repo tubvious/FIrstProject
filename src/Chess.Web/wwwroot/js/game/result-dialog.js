@@ -50,6 +50,10 @@ export class ResultDialog {
 
     if (!myColor) {
       note.textContent = '';
+    } else if (opponent?.isBot) {
+      rematchLabel.textContent = state.rematchCode ? 'Starting…' : 'Play again';
+      rematch.disabled = Boolean(state.rematchCode);
+      note.textContent = '';
     } else if (state.rematchCode) {
       rematchLabel.textContent = 'Starting…';
       rematch.disabled = true;

@@ -93,6 +93,7 @@ public sealed class GameRepository(IDbContextFactory<ChessDbContext> contextFact
                     DisplayName = seat.Name!,
                     SeatTokenHash = seat.TokenHash!,
                     JoinedAt = now.UtcDateTime,
+                    BotLevel = seat.BotLevel,
                 });
             }
         }
@@ -138,7 +139,7 @@ public sealed class GameRepository(IDbContextFactory<ChessDbContext> contextFact
             AsUtc(game.CreatedAt),
             game.StartedAt is { } started ? AsUtc(started) : null,
             game.FinishedAt is { } finished ? AsUtc(finished) : null,
-            game.Players.Select(p => new RestoredPlayer(p.Color, p.DisplayName, p.SeatTokenHash)).ToList(),
+            game.Players.Select(p => new RestoredPlayer(p.Color, p.DisplayName, p.SeatTokenHash, p.BotLevel)).ToList(),
             game.Moves.Select(m => new RestoredMove(
                 m.Ply, m.Uci, AsUtc(m.PlayedAt), FromMs(m.WhiteTimeRemainingMs), FromMs(m.BlackTimeRemainingMs))).ToList());
     }

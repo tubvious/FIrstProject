@@ -72,7 +72,16 @@ public sealed class GameSession
 
     public int SpectatorCount => _spectators.Count;
 
-    public bool HasConnections => _white.IsConnected || _black.IsConnected || _spectators.Count > 0;
+    /// <summary>Whether any browser is watching or playing (the computer does not count).</summary>
+    public bool HasConnections => _white.HasBrowserConnections || _black.HasBrowserConnections || _spectators.Count > 0;
+
+    /// <summary>The colour the computer plays in a game against the computer.</summary>
+    public PieceColor? BotColor => _white.IsBot ? PieceColor.White : _black.IsBot ? PieceColor.Black : null;
+
+    public bool IsBotToMove => Status == GameStatus.InProgress && BotColor == _game.SideToMove;
+
+    /// <summary>Set while the computer is thinking, so only one move is ever computed at a time.</summary>
+    public bool BotMovePending { get; set; }
 
     public bool IsRematchAgreed => Status == GameStatus.Finished && _white.RematchRequested && _black.RematchRequested;
 
@@ -101,6 +110,26 @@ public sealed class GameSession
         return session;
     }
 
+    /// <summary>Creates a game against the computer. It starts straight away; there is nobody to wait for.</summary>
+    public static GameSession CreateAgainstBot(
+        string code,
+        TimeControl? timeControl,
+        ColorPreference colorPreference,
+        PieceColor humanColor,
+        string humanName,
+        string humanTokenHash,
+        int botLevel,
+        DateTimeOffset now)
+    {
+        var session = Create(code, timeControl, colorPreference, humanColor, humanName, humanTokenHash, now);
+        session.Seat(humanColor.Opposite()).OccupyWithBot(BotName(botLevel), botLevel);
+        session.Status = GameStatus.InProgress;
+        session.StartedAt = now;
+        return session;
+    }
+
+    public static string BotName(int level) => $"Computer ({Engine.Ai.BotLevel.Get(level).Name})";
+
     /// <summary>Rebuilds a session from persisted data by replaying its moves through the rules engine.</summary>
     public static GameSession Restore(RestoredGame data, DateTimeOffset now)
     {
@@ -109,7 +138,14 @@ public sealed class GameSession
 
         foreach (var player in data.Players)
         {
-            session.Seat(player.Color).Occupy(player.Name, player.TokenHash, now);
+            if (player.BotLevel is { } level)
+            {
+                session.Seat(player.Color).OccupyWithBot(player.Name, level);
+            }
+            else
+            {
+                session.Seat(player.Color).Occupy(player.Name, player.TokenHash, now);
+            }
         }
 
         foreach (var move in data.Moves)
@@ -211,13 +247,26 @@ public sealed class GameSession
             : GameActionResult.PresenceChanged();
     }
 
-    public GameActionResult MakeMove(string connectionId, Move move, DateTimeOffset now)
+    public GameActionResult MakeMove(string connectionId, Move move, DateTimeOffset now) =>
+        PlayerFor(connectionId) is { } seat ? PlayMove(seat, move, now) : GameActionResult.Fail(GameError.NotAPlayer);
+
+    /// <summary>
+    /// Plays the computer's move, provided the game is still where it was when the computer started
+    /// thinking (the opponent may have resigned or the clock may have run out meanwhile).
+    /// </summary>
+    public GameActionResult PlayBotMove(Move move, int expectedPly, DateTimeOffset now)
     {
-        if (PlayerFor(connectionId) is not { } seat)
+        BotMovePending = false;
+        if (!IsBotToMove || _game.Moves.Count != expectedPly || BotColor is not { } botColor)
         {
-            return GameActionResult.Fail(GameError.NotAPlayer);
+            return GameActionResult.Unchanged;
         }
 
+        return PlayMove(Seat(botColor), move, now);
+    }
+
+    private GameActionResult PlayMove(PlayerSeat seat, Move move, DateTimeOffset now)
+    {
         if (CheckPlayable() is { } error)
         {
             return error;
@@ -313,6 +362,11 @@ public sealed class GameSession
             return error;
         }
 
+        if (BotColor is not null)
+        {
+            return GameActionResult.Fail(GameError.NotAvailableAgainstComputer);
+        }
+
         if (DrawOfferedBy == seat.Color.Opposite())
         {
             // Both sides want a draw.
@@ -384,6 +438,12 @@ public sealed class GameSession
         }
 
         seat.RematchRequested = true;
+        if (Seat(seat.Color.Opposite()).IsBot)
+        {
+            // The computer is always up for another game.
+            Seat(seat.Color.Opposite()).RematchRequested = true;
+        }
+
         Touch(now);
         return GameActionResult.GameChanged(new GameEvent(GameEventType.RematchRequested, seat.Color));
     }
@@ -415,8 +475,8 @@ public sealed class GameSession
         }
 
         var rematch = new GameSession(newCode, TimeControl, ColorPreference, now, rematchOfCode: Code);
-        rematch._white.Occupy(_black.Name!, _black.TokenHash!, now);
-        rematch._black.Occupy(_white.Name!, _white.TokenHash!, now);
+        rematch._white.TakeOver(_black, now);
+        rematch._black.TakeOver(_white, now);
         rematch.Status = GameStatus.InProgress;
         rematch.StartedAt = now;
 

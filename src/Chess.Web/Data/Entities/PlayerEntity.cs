@@ -17,4 +17,7 @@ public sealed class PlayerEntity
     public required string SeatTokenHash { get; set; }
 
     public DateTime JoinedAt { get; set; }
+
+    /// <summary>Difficulty level when the seat is played by the computer; null for a person.</summary>
+    public int? BotLevel { get; set; }
 }

@@ -68,7 +68,8 @@ public static class GameStateMapper
                 seat.Name!,
                 seat.IsConnected,
                 seat.DisconnectedSince is { } since ? (long)(now - since).TotalMilliseconds : null,
-                seat.RematchRequested)
+                seat.RematchRequested,
+                seat.IsBot)
             : null;
 
     private static ClockDto? ToDto(ChessClock? clock, DateTimeOffset now) =>

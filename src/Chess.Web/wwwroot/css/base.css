@@ -426,6 +426,16 @@ legend {
   gap: 8px;
 }
 
+.choice-grid--levels {
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.choice-grid--levels .choice__body {
+  min-height: 54px;
+  padding: 6px 2px;
+}
+
 .choice {
   position: relative;
 }

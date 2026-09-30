@@ -479,7 +479,8 @@ class GamePage {
     const finished = state?.status === 'finished';
     actions.hidden = !(playing || finished);
 
-    draw.hidden = !playing;
+    const vsComputer = Boolean(myColor && state?.[opposite(myColor)]?.isBot);
+    draw.hidden = !playing || vsComputer;
     resign.hidden = !playing;
     if (playing) {
       const offered = state.drawOfferedBy === myColor;
@@ -495,7 +496,8 @@ class GamePage {
       rematch.disabled = Boolean(requested) && !state.rematchCode;
       label(rematch, state.rematchCode
         ? 'Go to rematch'
-        : requested ? 'Rematch sent' : state[opposite(myColor)]?.rematchRequested ? 'Accept rematch' : 'Rematch');
+        : vsComputer ? 'Play again'
+          : requested ? 'Rematch sent' : state[opposite(myColor)]?.rematchRequested ? 'Accept rematch' : 'Rematch');
     }
   }
 

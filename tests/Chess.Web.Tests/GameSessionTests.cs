@@ -323,6 +323,39 @@ public class GameSessionTests
     }
 
     [Fact]
+    public void ComputerSeat_IsAlwaysPresent_AndOnlyTheServerCanMoveForIt()
+    {
+        var session = GameSession.CreateAgainstBot("BOTGAME1", null, ColorPreference.White, PieceColor.White, "Alice", WhiteToken, 3, Start);
+        session.Join("white-conn", WhiteToken, [], "Alice", "unused", Start);
+
+        Assert.Equal(GameStatus.InProgress, session.Status);
+        Assert.Equal(PieceColor.Black, session.BotColor);
+        Assert.True(session.Seat(PieceColor.Black).IsConnected);
+        Assert.False(session.IsBotToMove);
+
+        Move(session, "white-conn", "e2e4");
+        Assert.True(session.IsBotToMove);
+        Assert.Equal(GameError.NotYourTurn, Move(session, "white-conn", "e7e5").Error);
+
+        // A stale computer move (computed for an earlier position) is ignored.
+        Assert.Equal(ChangeKind.None, session.PlayBotMove(Engine.Move.ParseUci("e7e5"), expectedPly: 0, Start).Change);
+        Assert.True(session.PlayBotMove(Engine.Move.ParseUci("e7e5"), expectedPly: 1, Start).Succeeded);
+        Assert.Equal(2, session.Game.Moves.Count);
+    }
+
+    [Fact]
+    public void ComputerSeat_CannotBeClaimedOrAbandoned()
+    {
+        var session = GameSession.CreateAgainstBot("BOTGAME2", null, ColorPreference.White, PieceColor.White, "Alice", WhiteToken, 1, Start);
+        session.Join("white-conn", WhiteToken, [], "Alice", "unused", Start);
+
+        Assert.Equal(ParticipantRole.Spectator, session.Join("intruder", null, [], "Eve", "EVE", Start).Role);
+        Assert.Equal(GameError.OpponentConnected,
+            session.ClaimAbandonedGame("white-conn", false, TimeSpan.Zero, Start.AddHours(1)).Error);
+        Assert.False(session.HasConnections && session.Seat(PieceColor.Black).HasBrowserConnections);
+    }
+
+    [Fact]
     public void Version_Increases_WithEveryObservableChange()
     {
         var session = StartedGame();

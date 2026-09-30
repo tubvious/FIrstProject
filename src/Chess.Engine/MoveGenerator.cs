@@ -27,16 +27,68 @@ internal static class MoveGenerator
         GeneratePseudoLegalMoves(position, candidates);
 
         var mover = position.SideToMove;
+        var kingSquare = position.FindKing(mover);
+        var inCheck = kingSquare is not { } king || position.IsSquareAttacked(king, mover.Opposite());
+        var pinned = inCheck ? 0UL : FindPinnedPieces(position, kingSquare!.Value, mover);
+
         var legal = new List<Move>(candidates.Count);
         foreach (var move in candidates)
         {
-            if (!position.Apply(move).IsInCheck(mover))
+            // Most moves cannot expose the king: only king moves, pinned pieces, en passant (which removes
+            // two pieces from a rank) and any move while in check need to be verified on the resulting position.
+            var piece = position[move.From]!.Value;
+            var needsVerification = inCheck ||
+                                    piece.Type == PieceType.King ||
+                                    (pinned & (1UL << move.From.Index)) != 0 ||
+                                    (piece.Type == PieceType.Pawn && move.To == position.EnPassantSquare);
+
+            if (!needsVerification || !position.Apply(move).IsInCheck(mover))
             {
                 legal.Add(move);
             }
         }
 
         return legal.AsReadOnly();
+    }
+
+    /// <summary>Bitboard of the mover's pieces that shield their own king from an enemy slider.</summary>
+    private static ulong FindPinnedPieces(Position position, Square king, PieceColor mover)
+    {
+        var pinned = 0UL;
+        foreach (var (fileDelta, rankDelta) in AllDirections)
+        {
+            var diagonal = fileDelta != 0 && rankDelta != 0;
+            Square? shield = null;
+            var current = king;
+            while (current.TryOffset(fileDelta, rankDelta, out current))
+            {
+                if (position[current] is not { } piece)
+                {
+                    continue;
+                }
+
+                if (piece.Color == mover)
+                {
+                    if (shield is not null)
+                    {
+                        break; // two of our pieces in a row: nothing is pinned on this line
+                    }
+
+                    shield = current;
+                    continue;
+                }
+
+                var pins = piece.Type == PieceType.Queen || piece.Type == (diagonal ? PieceType.Bishop : PieceType.Rook);
+                if (shield is { } shielded && pins)
+                {
+                    pinned |= 1UL << shielded.Index;
+                }
+
+                break;
+            }
+        }
+
+        return pinned;
     }
 
     private static void GeneratePseudoLegalMoves(Position position, List<Move> moves)

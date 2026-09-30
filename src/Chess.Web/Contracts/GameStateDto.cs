@@ -43,7 +43,7 @@ public sealed record MoveDto(
     PieceType? Promotion,
     string Fen);
 
-public sealed record PlayerDto(string Name, bool Connected, long? DisconnectedForMs, bool RematchRequested);
+public sealed record PlayerDto(string Name, bool Connected, long? DisconnectedForMs, bool RematchRequested, bool IsBot);
 
 /// <summary>Remaining times are as of <see cref="GameStateDto.ServerTime"/>; clients count down locally.</summary>
 public sealed record ClockDto(long InitialMs, long IncrementMs, long WhiteMs, long BlackMs, PieceColor? Running);

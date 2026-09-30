@@ -20,6 +20,6 @@ public sealed record RestoredGame(
     IReadOnlyList<RestoredPlayer> Players,
     IReadOnlyList<RestoredMove> Moves);
 
-public sealed record RestoredPlayer(PieceColor Color, string Name, string TokenHash);
+public sealed record RestoredPlayer(PieceColor Color, string Name, string TokenHash, int? BotLevel = null);
 
 public sealed record RestoredMove(int Ply, string Uci, DateTimeOffset PlayedAt, TimeSpan? WhiteRemaining, TimeSpan? BlackRemaining);

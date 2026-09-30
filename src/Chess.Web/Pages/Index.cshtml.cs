@@ -19,6 +19,8 @@ public sealed class IndexModel : PageModel
     ];
 
     public const string DefaultTimeControl = "10+0";
+
+    public const int DefaultBotLevel = 3;
 }
 
 public sealed record TimeControlOption(int? Minutes, int IncrementSeconds, string Label, string Category)

@@ -93,6 +93,15 @@ export function describeStatus({ state, myColor, connectionState, reviewPly }) {
   }
 
   const opponent = state[opposite(myColor)];
+  if (opponent?.isBot && state.turn !== myColor) {
+    return {
+      tone: inCheck ? 'danger' : 'neutral',
+      icon: 'spinner',
+      title: 'Computer is thinking…',
+      detail: inCheck ? 'You gave check!' : `Move ${moveNumber(state)} · You play ${colorName(myColor)}`,
+    };
+  }
+
   if (opponent && !opponent.connected) {
     return { tone: 'warning', icon: 'wifi-off', title: 'Opponent disconnected', detail: 'Waiting for them to reconnect…' };
   }

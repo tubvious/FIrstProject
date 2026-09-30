@@ -1,3 +1,4 @@
+using Chess.Engine.Ai;
 using Chess.Web.Contracts;
 using Chess.Web.Domain;
 using Chess.Web.Services;
@@ -44,8 +45,29 @@ public static class GameEndpoints
             });
         }
 
+        int? botLevel = null;
+        if (request.Opponent == OpponentType.Computer)
+        {
+            if (request.BotLevel is not { } level || !BotLevel.IsValid(level))
+            {
+                return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    ["botLevel"] = [$"Choose a computer level from {BotLevel.Min} to {BotLevel.Max}."],
+                });
+            }
+
+            botLevel = level;
+        }
+        else if (!Enum.IsDefined(request.Opponent))
+        {
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+            {
+                ["opponent"] = ["Opponent must be friend or computer."],
+            });
+        }
+
         var response = await games.CreateGameAsync(
-            new CreateGameCommand(request.PlayerName, timeControl, request.Color), cancellationToken);
+            new CreateGameCommand(request.PlayerName, timeControl, request.Color, botLevel), cancellationToken);
         return TypedResults.Created(response.Url, response);
     }
 

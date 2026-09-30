@@ -24,6 +24,9 @@ internal static partial class Log
     [LoggerMessage(Level = LogLevel.Error, Message = "Game {Code} could not be restored from the database")]
     public static partial void RestoreFailed(this ILogger logger, Exception exception, string code);
 
+    [LoggerMessage(Level = LogLevel.Error, Message = "The computer failed to move in game {Code}")]
+    public static partial void BotMoveFailed(this ILogger logger, Exception exception, string code);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "Clock check failed")]
     public static partial void ClockCheckFailed(this ILogger logger, Exception exception);
 

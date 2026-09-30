@@ -41,6 +41,7 @@ public enum GameError
     NoRematchRequest,
     OpponentConnected,
     ReconnectGracePending,
+    NotAvailableAgainstComputer,
 }
 
 /// <summary>Things that happened in a game that clients may want to surface as notifications.</summary>

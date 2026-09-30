@@ -20,6 +20,7 @@ public sealed class ChessAppFactory : WebApplicationFactory<Program>
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:Chess", $"Data Source={_databasePath}");
         builder.UseSetting("Chess:GameCreationPerMinuteLimit", "1000");
+        builder.UseSetting("Chess:BotMinimumThinkTime", "00:00:00");
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<TimeProvider>();
