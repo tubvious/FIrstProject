@@ -1,0 +1,137 @@
+@page "/game/{code}"
+@model GameModel
+@{
+    ViewData["Title"] = Model.Summary is null ? "Game not found" : $"Game {Model.Code}";
+}
+@section Styles {
+    <link rel="stylesheet" href="~/css/game.css" asp-append-version="true" />
+}
+
+@if (Model.Summary is null)
+{
+    <div class="page-message">
+        <img class="page-message__icon" src="~/img/pieces/bK.svg" alt="" />
+        <h1>Game not found</h1>
+        <p>We couldn't find a game with that code. Double-check the link, or start a new game.</p>
+        <a class="btn btn--primary btn--lg" href="/"><icon name="home" />Back to Home</a>
+    </div>
+    return;
+}
+
+<div class="game-layout" id="game" data-game-code="@Model.Code">
+    <section class="board-column" aria-label="Board">
+        <partial name="_PlayerBar" model="@("bar-top")" />
+
+        <div class="board-shell">
+            <div class="board" id="board" role="application" aria-label="Chess board"></div>
+
+            <div class="board-overlay" id="board-overlay">
+                <div class="invite" id="overlay-connecting">
+                    <div class="spinner"></div>
+                    <p class="invite__text">Connecting to the game…</p>
+                </div>
+
+                <div class="invite" id="overlay-invite" hidden>
+                    <div class="pulse-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+                    <div>
+                        <h2 class="invite__title">Waiting for opponent…</h2>
+                        <p class="invite__text">Send this link to a friend. The game starts as soon as they join.</p>
+                    </div>
+                    <div class="invite__code kbd-code" data-role="code">@Model.Code</div>
+                    <div class="input-group">
+                        <input class="input" data-role="link" readonly aria-label="Game link" />
+                        <button class="btn btn--primary" type="button" data-action="copy-link"><icon name="copy" />Copy</button>
+                    </div>
+                </div>
+
+                <div class="invite" id="overlay-error" hidden>
+                    <icon name="wifi-off" class="page-message__icon" />
+                    <div>
+                        <h2 class="invite__title" data-role="title">Connection lost</h2>
+                        <p class="invite__text" data-role="message">Trying to reconnect…</p>
+                    </div>
+                    <button class="btn btn--primary" type="button" data-action="retry">Try again</button>
+                </div>
+            </div>
+        </div>
+
+        <partial name="_PlayerBar" model="@("bar-bottom")" />
+    </section>
+
+    <aside class="side-panel card" aria-label="Game panel">
+        <div class="status" id="status" data-tone="neutral" aria-live="polite">
+            <div class="status__icon" data-role="icon"><div class="spinner"></div></div>
+            <div>
+                <div class="status__title" data-role="title">Connecting…</div>
+                <div class="status__detail" data-role="detail">Setting up the board</div>
+            </div>
+        </div>
+
+        <div class="prompt" id="prompt" hidden>
+            <div class="prompt__text" data-role="text"></div>
+            <div class="prompt__actions" data-role="actions"></div>
+        </div>
+
+        <div class="panel-section game-meta">
+            <div class="game-meta__code">
+                <span class="game-meta__label">Game code</span>
+                <span class="game-meta__value kbd-code" id="meta-code">@Model.Code</span>
+            </div>
+            <button class="btn btn--soft btn--sm" type="button" data-action="copy-link"><icon name="link" />Copy Game Link</button>
+            <div class="chips">
+                <span class="chip" id="chip-time"><icon name="clock" /><span data-role="text">No clock</span></span>
+                <span class="chip" id="chip-role"><span data-role="text">Spectating</span></span>
+                <span class="chip" id="chip-spectators" hidden title="Spectators"><icon name="eye" /><span data-role="text">0</span></span>
+            </div>
+        </div>
+
+        <div class="moves" id="moves" aria-label="Move history"></div>
+
+        <div class="review-bar" id="review-bar">
+            <button class="icon-btn" type="button" data-nav="first" aria-label="First move"><icon name="chevrons-left" /></button>
+            <button class="icon-btn" type="button" data-nav="prev" aria-label="Previous move"><icon name="chevron-left" /></button>
+            <button class="icon-btn" type="button" data-nav="next" aria-label="Next move"><icon name="chevron-right" /></button>
+            <button class="icon-btn" type="button" data-nav="last" aria-label="Latest move"><icon name="chevrons-right" /></button>
+        </div>
+
+        <div class="actions" id="actions" hidden>
+            <button class="btn btn--soft" type="button" id="btn-draw"><icon name="half" /><span data-role="label">Offer draw</span></button>
+            <button class="btn btn--soft" type="button" id="btn-resign"><icon name="flag" /><span data-role="label">Resign</span></button>
+            <button class="btn btn--primary" type="button" id="btn-rematch" hidden><icon name="refresh" /><span data-role="label">Rematch</span></button>
+            <a class="btn btn--soft" href="/" id="btn-new" hidden><icon name="plus" />New game</a>
+        </div>
+    </aside>
+</div>
+
+<dialog class="dialog" id="result-dialog" aria-labelledby="result-title">
+    <div class="result" data-tone="draw" tabindex="-1" autofocus>
+        <button class="icon-btn result__close" type="button" data-close aria-label="Close"><icon name="x" /></button>
+        <div class="result__emblem"><img src="~/img/pieces/wK.svg" alt="" data-role="emblem" /></div>
+        <div class="result__kicker" data-role="kicker"></div>
+        <h2 class="result__title" id="result-title" data-role="title"></h2>
+        <p class="result__detail" data-role="detail"></p>
+        <p class="result__rematch-note" data-role="note"></p>
+        <div class="dialog__actions dialog__actions--stretch">
+            <a class="btn btn--lg" href="/"><icon name="home" />Back to Home</a>
+            <button class="btn btn--primary btn--lg" type="button" data-role="rematch"><icon name="refresh" /><span data-role="rematch-label">Rematch</span></button>
+        </div>
+    </div>
+</dialog>
+
+<dialog class="dialog" id="confirm-dialog" aria-labelledby="confirm-title">
+    <form class="dialog__body" method="dialog">
+        <div>
+            <h2 class="dialog__title" id="confirm-title" data-role="title"></h2>
+            <p class="dialog__subtitle" data-role="message"></p>
+        </div>
+        <div class="dialog__actions dialog__actions--stretch">
+            <button class="btn btn--lg" value="cancel">Cancel</button>
+            <button class="btn btn--danger btn--lg" value="confirm" data-role="confirm">Confirm</button>
+        </div>
+    </form>
+</dialog>
+
+@section Scripts {
+    <script src="~/lib/microsoft-signalr/signalr.min.js" asp-append-version="true"></script>
+    <script type="module" src="~/js/game/game-page.js" asp-append-version="true"></script>
+}

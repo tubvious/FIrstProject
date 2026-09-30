@@ -1,0 +1,278 @@
+/* ==========================================================================
+   Chess board
+   Squares are a CSS grid; pieces live in their own layer and are positioned
+   with transforms so moves can animate smoothly between squares.
+   ========================================================================== */
+.board {
+  --highlight-last: rgba(255, 214, 64, 0.42);
+  --highlight-selected: rgba(255, 199, 30, 0.62);
+  --move-dot: rgba(18, 28, 40, 0.24);
+  --board-size: 100%;
+  position: relative;
+  width: var(--board-size);
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px var(--board-frame), 0 18px 48px rgba(16, 24, 40, 0.22);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+  container-type: inline-size;
+}
+
+.board__squares {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(8, 1fr);
+}
+
+.sq {
+  position: relative;
+  background: var(--board-light);
+}
+
+.sq--dark {
+  background: var(--board-dark);
+}
+
+/* Highlight overlay drawn with a pseudo element so it blends over either square colour. */
+.sq::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sq--last::before {
+  background: var(--highlight-last);
+}
+
+.sq--selected::before {
+  background: var(--highlight-selected);
+}
+
+.sq--check::before {
+  background: radial-gradient(circle, rgba(255, 36, 36, 0.95) 0%, rgba(231, 20, 20, 0.62) 32%, rgba(200, 0, 0, 0) 72%);
+  animation: check-pulse 1.4s ease-in-out infinite;
+}
+
+.sq--hover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 0 max(3px, 0.6cqi) rgba(255, 255, 255, 0.75);
+  pointer-events: none;
+}
+
+/* Legal destination markers */
+.sq--target::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 30%;
+  height: 30%;
+  border-radius: 50%;
+  background: var(--move-dot);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.sq--target.sq--occupied::after {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, transparent 0 62%, var(--move-dot) 63% 100%);
+}
+
+.sq--target.sq--hover::after {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.22);
+  box-shadow: inset 0 0 0 max(3px, 0.6cqi) rgba(255, 255, 255, 0.75);
+}
+
+.sq--impact::before {
+  animation: impact 0.45s ease-out;
+}
+
+/* Coordinates are drawn inside the edge squares, coloured like the opposite square. */
+.coord {
+  position: absolute;
+  font-size: max(9px, 2.1cqi);
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+  color: var(--board-dark);
+}
+
+.sq--dark .coord {
+  color: var(--board-light);
+}
+
+.coord--rank {
+  top: 5%;
+  left: 5%;
+}
+
+.coord--file {
+  right: 6%;
+  bottom: 4%;
+}
+
+/* Pieces */
+.board__pieces {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.piece {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 12.5%;
+  height: 12.5%;
+  will-change: transform;
+  transition: transform 0.2s var(--ease-out);
+}
+
+/* The artwork lives on a pseudo element so scale effects never disturb the positioning transform. */
+.piece::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-size: 100%;
+  background-repeat: no-repeat;
+  transition: scale 0.15s var(--ease-out), opacity 0.25s ease, filter 0.15s ease;
+}
+
+.piece--instant {
+  transition: none;
+}
+
+.piece--dragging {
+  z-index: 10;
+  transition: none;
+  cursor: grabbing;
+}
+
+.piece--dragging::before {
+  scale: 1.1;
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.3));
+}
+
+.piece--moving {
+  z-index: 5;
+}
+
+.piece--captured::before {
+  opacity: 0;
+  scale: 0.55;
+}
+
+.piece--appearing::before {
+  animation: piece-appear 0.25s var(--ease-out);
+}
+
+.board--interactive .sq--movable {
+  cursor: grab;
+}
+
+.board--interactive .sq--target {
+  cursor: pointer;
+}
+
+.piece[data-piece="wK"]::before { background-image: url("../img/pieces/wK.svg"); }
+.piece[data-piece="wQ"]::before { background-image: url("../img/pieces/wQ.svg"); }
+.piece[data-piece="wR"]::before { background-image: url("../img/pieces/wR.svg"); }
+.piece[data-piece="wB"]::before { background-image: url("../img/pieces/wB.svg"); }
+.piece[data-piece="wN"]::before { background-image: url("../img/pieces/wN.svg"); }
+.piece[data-piece="wP"]::before { background-image: url("../img/pieces/wP.svg"); }
+.piece[data-piece="bK"]::before { background-image: url("../img/pieces/bK.svg"); }
+.piece[data-piece="bQ"]::before { background-image: url("../img/pieces/bQ.svg"); }
+.piece[data-piece="bR"]::before { background-image: url("../img/pieces/bR.svg"); }
+.piece[data-piece="bB"]::before { background-image: url("../img/pieces/bB.svg"); }
+.piece[data-piece="bN"]::before { background-image: url("../img/pieces/bN.svg"); }
+.piece[data-piece="bP"]::before { background-image: url("../img/pieces/bP.svg"); }
+
+/* Promotion picker: a column of choices over the destination file */
+.promotion {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(12, 16, 22, 0.45);
+  animation: fade-in 0.15s ease;
+}
+
+.promotion__choices {
+  position: absolute;
+  width: 12.5%;
+  display: grid;
+  grid-auto-rows: 1fr;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: dialog-in 0.18s var(--ease-out);
+}
+
+.promotion__choice {
+  aspect-ratio: 1;
+  border: 0;
+  padding: 8%;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.promotion__choice:hover,
+.promotion__choice:focus-visible {
+  background: var(--accent-soft);
+}
+
+.promotion__choice img {
+  width: 100%;
+  height: 100%;
+}
+
+/* Overlay for waiting / connection states on top of the board */
+.board-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: grid;
+  place-items: center;
+  padding: 6%;
+  background: color-mix(in srgb, var(--bg) 55%, transparent);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: fade-in 0.25s ease;
+}
+
+
+@keyframes check-pulse {
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes impact {
+  0% {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0) 70%);
+  }
+
+  100% {
+    background: radial-gradient(circle, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 70%);
+  }
+}
+
+@keyframes piece-appear {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}

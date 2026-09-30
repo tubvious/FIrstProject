@@ -1,0 +1,16 @@
+@model string
+@* One side of the board: avatar, name, presence, captured material and clock. Filled in by player-bar.js. *@
+<div class="player-bar" id="@Model">
+    <div class="player-bar__avatar" data-role="avatar">
+        <img src="~/img/pieces/wK.svg" alt="" width="30" height="30" data-role="avatar-img" />
+    </div>
+    <div class="player-bar__info">
+        <div class="player-bar__name-row">
+            <span class="player-bar__name" data-role="name">&nbsp;</span>
+            <span class="badge" data-role="you" hidden>You</span>
+            <span class="presence" data-role="presence" hidden></span>
+        </div>
+        <div class="player-bar__captured" data-role="captured"></div>
+    </div>
+    <div class="clock" data-role="clock" hidden>--:--</div>
+</div>

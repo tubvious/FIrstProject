@@ -1,0 +1,8 @@
+# Analyzer settings for test projects only.
+[*.cs]
+# Test names conventionally use underscores (Method_Scenario_Expectation).
+dotnet_diagnostic.CA1707.severity = none
+# xUnit test classes must be public and are instantiated by the framework.
+dotnet_diagnostic.CA1515.severity = none
+# Fixtures are disposed by xUnit through IAsyncLifetime rather than IDisposable.
+dotnet_diagnostic.CA1001.severity = none

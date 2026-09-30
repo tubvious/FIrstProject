@@ -1,0 +1,138 @@
+@page
+@model IndexModel
+@section Styles {
+    <link rel="stylesheet" href="~/css/home.css" asp-append-version="true" />
+}
+
+<section class="hero">
+    <div class="hero__copy">
+        <span class="eyebrow"><span class="eyebrow__dot"></span>Real-time multiplayer</span>
+        <h1 class="hero__title">Chess</h1>
+        <p class="hero__lead">Play chess with your friends.</p>
+
+        <div class="name-card">
+            <span class="name-card__avatar"><img src="~/img/pieces/wK.svg" alt="" width="28" height="28" /></span>
+            <label class="name-card__field">
+                <span class="name-card__label">Playing as</span>
+                <input class="name-card__input" id="player-name" maxlength="24" autocomplete="nickname" spellcheck="false" />
+            </label>
+            <button class="icon-btn" id="random-name" type="button" title="Random name" aria-label="Pick a random name">
+                <icon name="dice" />
+            </button>
+        </div>
+
+        <div class="hero__actions">
+            <button class="btn btn--primary btn--lg" id="create-open" type="button"><icon name="plus" />Create Game</button>
+            <button class="btn btn--lg" id="join-open" type="button"><icon name="enter" />Join Game</button>
+        </div>
+
+        <button class="link-btn" id="howto-open" type="button"><icon name="help" />How to play</button>
+
+        <ul class="features">
+            <li><icon name="check" />Real-time moves</li>
+            <li><icon name="check" />Optional chess clock</li>
+            <li><icon name="check" />No sign-up</li>
+        </ul>
+    </div>
+
+    <div class="hero__board" aria-hidden="true">
+        <div class="board" id="preview-board"></div>
+    </div>
+</section>
+
+<dialog class="dialog" id="create-dialog" aria-labelledby="create-title">
+    <form class="dialog__body" id="create-form" novalidate>
+        <div class="dialog__header">
+            <div>
+                <h2 class="dialog__title" id="create-title">New game</h2>
+                <p class="dialog__subtitle">Choose a time control and your colour.</p>
+            </div>
+            <button class="icon-btn" type="button" data-close aria-label="Close"><icon name="x" /></button>
+        </div>
+
+        <fieldset class="field">
+            <legend class="field__label">Time control</legend>
+            <div class="choice-grid">
+                @foreach (var option in IndexModel.TimeControls)
+                {
+                    <label class="choice">
+                        <input type="radio" name="timeControl" value="@option.Value"
+                               data-minutes="@option.Minutes" data-increment="@option.IncrementSeconds"
+                               checked="@(option.Label == IndexModel.DefaultTimeControl)" />
+                        <span class="choice__body">
+                            <span class="choice__title">@option.Label</span>
+                            <span class="choice__hint">@option.Category</span>
+                        </span>
+                    </label>
+                }
+            </div>
+        </fieldset>
+
+        <fieldset class="field">
+            <legend class="field__label">Play as</legend>
+            <div class="segmented">
+                <label class="choice">
+                    <input type="radio" name="color" value="white" />
+                    <span class="choice__body"><img src="~/img/pieces/wK.svg" alt="" />White</span>
+                </label>
+                <label class="choice">
+                    <input type="radio" name="color" value="random" checked />
+                    <span class="choice__body"><icon name="half" />Random</span>
+                </label>
+                <label class="choice">
+                    <input type="radio" name="color" value="black" />
+                    <span class="choice__body"><img src="~/img/pieces/bK.svg" alt="" />Black</span>
+                </label>
+            </div>
+        </fieldset>
+
+        <p class="field__error" id="create-error" role="alert"></p>
+        <button class="btn btn--primary btn--lg btn--block" type="submit" id="create-submit">Create game</button>
+    </form>
+</dialog>
+
+<dialog class="dialog" id="join-dialog" aria-labelledby="join-title">
+    <form class="dialog__body" id="join-form" novalidate>
+        <div class="dialog__header">
+            <div>
+                <h2 class="dialog__title" id="join-title">Join a game</h2>
+                <p class="dialog__subtitle">Enter the code or paste the link your friend sent you.</p>
+            </div>
+            <button class="icon-btn" type="button" data-close aria-label="Close"><icon name="x" /></button>
+        </div>
+        <div class="field">
+            <label class="visually-hidden" for="join-code">Game code</label>
+            <input class="input code-input" id="join-code" maxlength="200" placeholder="ABCD2345"
+                   autocomplete="off" autocapitalize="characters" spellcheck="false" />
+            <p class="field__error" id="join-error" role="alert"></p>
+        </div>
+        <button class="btn btn--primary btn--lg btn--block" type="submit" id="join-submit">Join game</button>
+    </form>
+</dialog>
+
+<dialog class="dialog" id="howto-dialog" aria-labelledby="howto-title">
+    <div class="dialog__body">
+        <div class="dialog__header">
+            <div>
+                <h2 class="dialog__title" id="howto-title">How to play</h2>
+                <p class="dialog__subtitle">Start a game with a friend in seconds.</p>
+            </div>
+            <button class="icon-btn" type="button" data-close aria-label="Close"><icon name="x" /></button>
+        </div>
+        <ol class="steps">
+            <li><div><strong>Create a game</strong><span>Pick a time control and your colour.</span></div></li>
+            <li><div><strong>Share the link</strong><span>Send the game link or 8-letter code to your friend.</span></div></li>
+            <li><div><strong>Play</strong><span>The game starts as soon as they join. Drag or click pieces to move.</span></div></li>
+        </ol>
+        <p class="dialog__subtitle">
+            Standard chess rules apply, including castling, en passant and promotion. Games end by checkmate,
+            stalemate, resignation, timeout, agreement, threefold repetition, the fifty-move rule or insufficient material.
+            If you lose your connection, just reopen the link to continue.
+        </p>
+        <button class="btn btn--primary btn--block" type="button" data-close>Got it</button>
+    </div>
+</dialog>
+
+@section Scripts {
+    <script type="module" src="~/js/home/home.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>@(ViewData["Title"] is string title ? $"{title} · Chess" : "Chess · Play chess with your friends")</title>
+    <meta name="description" content="Play real-time chess with your friends. Create a game, share the link, play." />
+    <meta name="theme-color" content="#f3f4f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1216" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="~/favicon.svg" type="image/svg+xml" />
+    <script src="~/js/theme-init.js" asp-append-version="true"></script>
+    <link rel="stylesheet" href="~/css/base.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/board.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <header class="site-header">
+        <a class="brand" href="/" aria-label="Chess home">
+            <span class="brand__mark"><img src="~/img/pieces/wN.svg" alt="" width="26" height="26" /></span>
+            <span>Chess</span>
+        </a>
+        <div class="header-actions">
+            <button class="icon-btn" id="sound-toggle" type="button" aria-pressed="true" aria-label="Sound effects" title="Sound effects">
+                <icon name="volume" class="icon-when-on" />
+                <icon name="volume-off" class="icon-when-off" />
+            </button>
+            <button class="icon-btn" id="theme-toggle" type="button" aria-pressed="false" aria-label="Dark mode" title="Toggle dark mode">
+                <icon name="sun" class="icon-when-on" />
+                <icon name="moon" class="icon-when-off" />
+            </button>
+        </div>
+    </header>
+
+    <main class="site-main">
+        @RenderBody()
+    </main>
+
+    <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+
+    <script type="module" src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
